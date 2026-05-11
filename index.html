@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -223,7 +222,11 @@
 
         <div class="bg-white border-b border-gray-200 px-4 pt-3 pb-2 flex gap-1 overflow-x-auto cart-scroll">
             <button onclick="switchAdminTab('stats')" id="admin-tab-stats" class="px-4 py-2 rounded-lg font-bold text-sm transition-colors bg-brand-cyanDark text-white whitespace-nowrap"><i class="fa-solid fa-chart-pie"></i> إحصائيات</button>
-            <button onclick="switchAdminTab('orders')" id="admin-tab-orders" class="px-4 py-2 rounded-lg font-bold text-sm transition-colors text-gray-600 hover:bg-gray-100 whitespace-nowrap relative"><i class="fa-solid fa-clipboard-list"></i> الطلبات</button>
+            <button onclick="switchAdminTab('orders')" id="admin-tab-orders" class="px-4 py-2 rounded-lg font-bold text-sm transition-colors text-gray-600 hover:bg-gray-100 whitespace-nowrap relative">
+                <i class="fa-solid fa-clipboard-list"></i> الطلبات
+                <!-- الباج بتاع الطلبات الجديدة -->
+                <span id="orders-tab-badge" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center hidden border border-white">0</span>
+            </button>
             <button onclick="switchAdminTab('customers')" id="admin-tab-customers" class="px-4 py-2 rounded-lg font-bold text-sm transition-colors text-gray-600 hover:bg-gray-100 whitespace-nowrap"><i class="fa-solid fa-users"></i> العملاء (CRM)</button>
             <button onclick="switchAdminTab('store')" id="admin-tab-store" class="px-4 py-2 rounded-lg font-bold text-sm transition-colors text-gray-600 hover:bg-gray-100 whitespace-nowrap"><i class="fa-solid fa-store"></i> المتجر</button>
             <button onclick="switchAdminTab('products')" id="admin-tab-products" class="px-4 py-2 rounded-lg font-bold text-sm transition-colors text-gray-600 hover:bg-gray-100 whitespace-nowrap"><i class="fa-solid fa-box-open"></i> المنتجات</button>
@@ -274,6 +277,12 @@
                             <div class="text-[10px] font-bold">إجمالي العملاء</div>
                         </div>
                     </div>
+                    
+                    <!-- شريط بحث العملاء -->
+                    <div class="mb-4 mt-4 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute right-3 top-3.5 text-gray-400"></i>
+                        <input type="text" id="customer-search-input" onkeyup="searchCustomers()" placeholder="ابحث برقم الموبايل أو اسم العميل..." class="w-full border-2 border-brand-cyan/30 rounded-xl p-3 pr-10 focus:border-brand-cyan outline-none font-bold text-brand-navy bg-white shadow-sm">
+                    </div>
 
                     <button onclick="copyAllCustomerNumbers()" class="w-full bg-green-50 text-green-700 border border-green-200 font-black py-3 rounded-xl shadow-sm hover:bg-green-100 transition-all flex justify-center items-center gap-2">
                         <i class="fa-brands fa-whatsapp text-xl"></i> نسخ جميع أرقام العملاء (لرسائل الواتساب المجمعة)
@@ -303,7 +312,11 @@
                 <div id="admin-panel-products" class="hidden space-y-4">
                     <div class="flex justify-between items-center bg-brand-light/30 p-3 rounded-lg border border-brand-cyan/20">
                         <p class="text-xs text-gray-600 font-bold"><i class="fa-solid fa-circle-info text-brand-cyanDark"></i> إدارة المنتجات بالكامل</p>
-                        <button onclick="addNewAdminProduct()" class="bg-brand-cyanDark hover:bg-brand-navy text-white text-xs font-bold px-3 py-1.5 rounded transition-colors shadow-sm"><i class="fa-solid fa-plus"></i> منتج جديد</button>
+                        <div class="flex gap-2">
+                            <!-- زر الجرد السريع -->
+                            <button onclick="toggleQuickStock()" class="bg-brand-yellow hover:bg-yellow-500 text-brand-navy text-xs font-bold px-3 py-1.5 rounded transition-colors shadow-sm"><i class="fa-solid fa-bolt"></i> جرد سريع</button>
+                            <button onclick="addNewAdminProduct()" class="bg-brand-cyanDark hover:bg-brand-navy text-white text-xs font-bold px-3 py-1.5 rounded transition-colors shadow-sm"><i class="fa-solid fa-plus"></i> منتج جديد</button>
+                        </div>
                     </div>
                     <div id="admin-inputs-container" class="space-y-4"></div>
                 </div>
@@ -348,7 +361,7 @@
                         </div>
                     </div>
 
-                    <!-- الميزة الجديدة: المولد السريع للأكواد المجمعة -->
+                    <!-- המيزة الجديدة: المولد السريع للأكواد المجمعة -->
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm">
                         <h3 class="font-black text-brand-navy mb-2"><i class="fa-solid fa-wand-magic-sparkles text-blue-500"></i> المولد السريع لأكواد الخصم المجمعة</h3>
                         <p class="text-[10px] text-gray-600 font-bold mb-3">حدد العدد اللي عايزه، والسيستم هيعملك أكواد عشوائية (كل كود يستخدم مرة واحدة) عشان تبعتها للعملاء على الواتساب.</p>
@@ -550,6 +563,8 @@
         let ordersList = []; 
         let customersList = [];
         let orderSearchQuery = "";
+        let customerSearchQuery = "";
+        let isQuickStockMode = false; // تتبع حالة وضع الجرد السريع
 
         document.getElementById('admin-store-open').addEventListener('change', function() {
             const label = document.getElementById('store-open-label');
@@ -1105,8 +1120,11 @@
                 if(btn) btn.className = t===tab ? "px-4 py-2 rounded-lg font-bold text-sm bg-brand-cyanDark text-white whitespace-nowrap" : "px-4 py-2 rounded-lg font-bold text-sm text-gray-600 hover:bg-gray-100 whitespace-nowrap";
             });
             document.getElementById('admin-panel-'+tab)?.classList.remove('hidden');
+            
+            // إلغاء وضع الجرد السريع عند تغيير التاب
+            if(tab === 'products') { isQuickStockMode = false; renderAdminProducts(); }
+            
             if(tab==='orders') loadOrders(); 
-            if(tab==='products') renderAdminProducts();
             if(tab==='customers') loadCustomers();
             if(tab==='stats') { renderTopProductsStats(); loadOrdersForStats(); }
         };
@@ -1147,18 +1165,31 @@
             } catch(e) { console.log("Error loading customers", e); }
         }
 
+        window.searchCustomers = () => {
+            customerSearchQuery = document.getElementById('customer-search-input').value.trim().toLowerCase();
+            renderCustomersList();
+        };
+
         window.renderCustomersList = () => {
             const container = document.getElementById('crm-customers-list');
             document.getElementById('crm-total-customers').innerText = customersList.length;
             
-            if(customersList.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-gray-400 font-bold text-xs">لا يوجد عملاء مسجلين حتى الآن.</div>';
+            let filtered = customersList;
+            if (customerSearchQuery !== "") {
+                filtered = filtered.filter(c => 
+                    (c.phone && c.phone.includes(customerSearchQuery)) || 
+                    (c.name && c.name.toLowerCase().includes(customerSearchQuery))
+                );
+            }
+
+            if(filtered.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-gray-400 font-bold text-xs">لا يوجد عملاء متطابقين مع البحث.</div>';
                 return;
             }
 
             container.innerHTML = '';
-            customersList.forEach((c, index) => {
-                let badge = index < 5 ? `<span class="bg-brand-yellow text-brand-navy text-[10px] px-2 py-0.5 rounded font-black shadow-sm">VIP</span>` : '';
+            filtered.forEach((c, index) => {
+                let badge = index < 5 && customerSearchQuery === "" ? `<span class="bg-brand-yellow text-brand-navy text-[10px] px-2 py-0.5 rounded font-black shadow-sm">VIP</span>` : '';
                 let promosHtml = (c.usedPromos && c.usedPromos.length > 0) ? `<div class="mt-2 flex gap-1 items-center flex-wrap"><i class="fa-solid fa-ticket text-red-400 text-[10px]"></i> ${c.usedPromos.map(p => `<span class="bg-red-50 text-red-600 text-[10px] px-1 rounded border border-red-100 font-bold">${p}</span>`).join('')}</div>` : '';
                 
                 container.innerHTML += `
@@ -1177,19 +1208,15 @@
         };
 
         window.copyAllCustomerNumbers = () => {
-            if(customersList.length === 0) { showAlert("تنبيه", "لا توجد أرقام لنسخها."); return; }
-            let numbersStr = customersList.map(c => c.phone).join('\n');
+            let listToCopy = customerSearchQuery !== "" ? customersList.filter(c => (c.phone && c.phone.includes(customerSearchQuery)) || (c.name && c.name.toLowerCase().includes(customerSearchQuery))) : customersList;
+            
+            if(listToCopy.length === 0) { showAlert("تنبيه", "لا توجد أرقام لنسخها."); return; }
+            let numbersStr = listToCopy.map(c => c.phone).join('\n');
             navigator.clipboard.writeText(numbersStr).then(() => {
-                showAlert("تم النسخ بنجاح", "تم نسخ جميع أرقام العملاء، يمكنك الآن لصقها في الواتساب أو برامج الإرسال.");
+                showAlert("تم النسخ بنجاح", `تم نسخ أرقام ${listToCopy.length} عميل بنجاح، يمكنك الآن لصقها في الواتساب.`);
             }).catch(err => {
-                // Fallback
-                const el = document.createElement('textarea');
-                el.value = numbersStr;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                showAlert("تم النسخ بنجاح", "تم نسخ جميع أرقام العملاء.");
+                const el = document.createElement('textarea'); el.value = numbersStr; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+                showAlert("تم النسخ بنجاح", `تم نسخ أرقام ${listToCopy.length} عميل.`);
             });
         };
 
@@ -1206,7 +1233,6 @@
         }
 
         window.calculateDynamicStats = (timeframe) => {
-            // Update UI buttons
             document.querySelectorAll('.stat-filter-btn').forEach(b => {
                 b.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-brand-navy stat-filter-btn";
             });
@@ -1268,6 +1294,48 @@
             renderAdminProducts();
         };
 
+        // الجرد السريع
+        window.toggleQuickStock = () => {
+            isQuickStockMode = !isQuickStockMode;
+            if(isQuickStockMode) {
+                renderQuickStock();
+            } else {
+                syncQuickStockToGlobal();
+                renderAdminProducts();
+            }
+        };
+
+        window.renderQuickStock = () => {
+            const container = document.getElementById('admin-inputs-container');
+            let html = '<div class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg mb-4 text-xs font-bold text-yellow-800 leading-relaxed"><i class="fa-solid fa-info-circle"></i> وضع الجرد السريع: قم بتحديث الأرقام هنا لتغيير المخزون بسرعة، ثم اضغط على زر "تأكيد والرجوع".</div>';
+            
+            html += '<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">';
+            Object.keys(tempProducts).forEach(id => {
+                const p = tempProducts[id];
+                const stock = globalStock[id] || 0;
+                html += `
+                <div class="flex justify-between items-center p-3 border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                    <div class="font-black text-sm text-brand-navy">${p.name}</div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] text-gray-500 font-bold">المتاح:</label>
+                        <input type="number" id="qs-stock-${id}" value="${stock}" class="w-20 border-2 border-brand-cyan/50 rounded p-1.5 text-center font-black text-brand-navy outline-none focus:border-brand-cyanDark focus:bg-brand-light text-sm transition-colors" dir="ltr">
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+            html += '<button onclick="toggleQuickStock()" class="w-full mt-4 bg-brand-navy text-white font-black py-3 rounded-xl shadow-sm hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> تأكيد الأرقام والرجوع</button>';
+            container.innerHTML = html;
+        };
+
+        window.syncQuickStockToGlobal = () => {
+            Object.keys(tempProducts).forEach(id => {
+                const el = document.getElementById(`qs-stock-${id}`);
+                if(el) {
+                    globalStock[id] = parseInt(el.value) || 0;
+                }
+            });
+        };
+
         window.renderAdminProducts = () => {
             const container = document.getElementById('admin-inputs-container'); container.innerHTML = '';
             Object.keys(tempProducts).forEach(id => {
@@ -1281,6 +1349,7 @@
         window.deleteAdminProduct = (id) => { if(!confirm('هل أنت متأكد من حذف هذا المنتج تماماً من المتجر؟')) return; delete tempProducts[id]; delete globalStock[id]; delete globalPrices[id]; delete globalOldPrices[id]; delete globalDiscounts[id]; renderAdminProducts(); };
 
         window.syncAdminProductsFromDOM = () => {
+            if(isQuickStockMode) { syncQuickStockToGlobal(); return; }
             if(!document.getElementById('admin-inputs-container') || document.getElementById('admin-inputs-container').innerHTML === '') return;
             let newBest = [];
             Object.keys(tempProducts).forEach(id => {
@@ -1387,11 +1456,6 @@
         };
 
         // ------------------ Orders & Search ------------------
-        window.searchOrders = () => {
-            orderSearchQuery = document.getElementById('order-search-input').value.trim().toLowerCase();
-            renderOrdersList();
-        };
-
         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-container');
             if(!container) return;
@@ -1423,16 +1487,28 @@
                 
                 let itemsHtml = order.items.map(i => `<div class="flex justify-between text-xs text-gray-700 font-bold border-b border-gray-100 pb-1 mb-1 last:border-0 last:pb-0 last:mb-0"><span><span class="text-brand-cyanDark">${i.quantity}x</span> ${i.name}</span><span>${i.quantity*i.price} ج</span></div>`).join('');
 
+                // عرض التاريخ والوقت
+                let dateStr = "تاريخ غير محدد";
+                if(order.createdAt && order.createdAt.toDate) {
+                    const d = order.createdAt.toDate();
+                    dateStr = d.toLocaleDateString('ar-EG') + ' - ' + d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+                } else if (order.createdAt) {
+                    const d = new Date(order.createdAt);
+                    dateStr = d.toLocaleDateString('ar-EG') + ' - ' + d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+                }
+
                 container.innerHTML += `
                 <div class="bg-white border rounded-xl p-4 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-1 h-full ${order.status === 'new' ? 'bg-red-500' : (order.status === 'processing' ? 'bg-yellow-500' : 'bg-green-500')}"></div>
-                    <div class="flex justify-between items-start mb-3">
+                    <div class="flex justify-between items-start mb-1">
                         <div>
                             <div class="font-black text-brand-navy">${order.customerName}</div>
                             <a href="tel:${order.customerPhone}" class="text-sm font-bold text-blue-600 hover:underline" dir="ltr">${order.customerPhone}</a>
                         </div>
                         <span class="px-2 py-1 rounded text-[10px] font-black border ${statusColor}">${statusText}</span>
                     </div>
+                    <div class="text-[10px] text-gray-400 mb-2 font-bold"><i class="fa-regular fa-clock"></i> ${dateStr}</div>
+                    
                     <div class="text-[11px] text-gray-500 mb-3 font-bold bg-gray-50 p-2 rounded">
                         <i class="fa-solid fa-location-dot text-brand-cyanDark mr-1"></i> ${order.zone} ${order.customerAddress && order.customerAddress !== 'غير محدد' ? ' - ' + order.customerAddress : ''}
                     </div>
@@ -1528,6 +1604,3 @@
     </script>
 </body>
 </html>
-
-
-```
